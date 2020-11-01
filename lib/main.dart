@@ -37,13 +37,13 @@ class MyApp extends StatelessWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  List<NumberHolder> numberHolders;
-  StreamController<List<NumberHolder>> streamController = StreamController.broadcast();
+  List<DBRow> numberHolders;
+  StreamController<List<DBRow>> streamController = StreamController.broadcast();
 
   @override
   void initState() {
     super.initState();
-    numberHolders = [NumberHolder(_counter)];
+    numberHolders = [DBRow(_counter)];
     streamController.add(numberHolders);
   }
 
@@ -56,7 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _incrementCounter() {
     setState(() {
       _counter++;
-      numberHolders.add(NumberHolder(_counter));
+      numberHolders.add(DBRow(_counter));
       streamController.add(numberHolders);
     });
   }
@@ -64,7 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
 //STREAMPROVIDER HERE
-    return StreamProvider<List<NumberHolder>>.value(
+    return StreamProvider<List<DBRow>>.value(
       initialData: numberHolders,
       value: streamController.stream,
       child: Builder(
@@ -106,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       stream: streamController.stream,
                       builder: (context, snapshot) {
                         if (snapshot.hasData) {
-                          List<NumberHolder> _numHolders = snapshot.data;
+                          List<DBRow> _numHolders = snapshot.data;
                           return ListView.builder(
                             itemCount: _numHolders.length,
                               itemBuilder: (context, index) {
@@ -127,9 +127,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     color: Colors.lightBlueAccent,
 //STREAMPROVIDER WATCH HERE
                     child: ListView.builder(
-                      itemCount: context.watch<List<NumberHolder>>().length,
+                      itemCount: context.watch<List<DBRow>>().length,
                         itemBuilder: (context, index) {
-                        List<NumberHolder> _holders = context.watch<List<NumberHolder>>();
+                        List<DBRow> _holders = context.watch<List<DBRow>>();
                           return ListTile(
                             title: Text('[${_holders[index].num}]'),
                           );
@@ -159,8 +159,9 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class NumberHolder {
+class DBRow {
   int num;
+  String name;
 
-  NumberHolder(this.num);
+  DBRow(this.num);
 }
