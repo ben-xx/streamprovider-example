@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -34,17 +35,26 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key key, this.title}) : super(key: key);
+  final String title;
+
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  List<DBRow> numberHolders;
-  StreamController<List<DBRow>> streamController = StreamController.broadcast();
+  List<RowItem> row;
+  StreamController<List<RowItem>> streamController =
+      StreamController.broadcast();
 
   @override
   void initState() {
     super.initState();
-    numberHolders = [DBRow(_counter)];
-    streamController.add(numberHolders);
+    row = [RowItem(_counter)];
+    streamController.add(row);
   }
 
   @override
@@ -56,112 +66,114 @@ class _MyHomePageState extends State<MyHomePage> {
   void _incrementCounter() {
     setState(() {
       _counter++;
-      numberHolders.add(DBRow(_counter));
-      streamController.add(numberHolders);
+      row.add(RowItem(_counter));
+      streamController.add(row);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-//STREAMPROVIDER HERE
-    return StreamProvider<List<DBRow>>.value(
-      initialData: numberHolders,
+    /// STREAM*PROVIDER* HERE
+    /// - wrapped Scaffold in Builder to make consuming widgets "children" of StreamProvider
+    /// instead of siblings. InheritedWidgets like StreamProvider are only useful
+    /// to children widgets who inherit its context from below in the widget tree hierarchy.
+    /// Often you'd wrap your entire MyApp with a Provider, but this keeps this example
+    /// more concise.
+    /// https://flutter.dev/docs/development/data-and-backend/state-mgmt/simple#changenotifierprovider
+    return StreamProvider<List<RowItem>>.value(
+      initialData: row,
       value: streamController.stream,
-      child: Builder(
-        builder: (context) =>  Scaffold(
-          appBar: AppBar(
-            // Here we take the value from the MyHomePage object that was created by
-            // the App.build method, and use it to set our appbar title.
-            title: Text(widget.title),
-          ),
-          body: Center(
-            // Center is a layout widget. It takes a single child and positions it
-            // in the middle of the parent.
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'You have pushed the button this many times:',
-                      ),
-                      Text(
-                        '$_counter',
-                        style: Theme.of(context).textTheme.headline4,
-                      )
-                    ],
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    alignment: Alignment.center,
-                    color: Colors.lightGreenAccent,
-// STREAMBUILDER HERE
-                    child: StreamBuilder(
-                      initialData: numberHolders,
-                      stream: streamController.stream,
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          List<DBRow> _numHolders = snapshot.data;
-                          return ListView.builder(
-                            itemCount: _numHolders.length,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  title: Text('[${_numHolders[index].num}]'),
-                                );
-                              },
-                          );
-                        }
-                        return Text('Waiting on data...');
-                      },
+      child: Builder( // <-- Added to make everything below
+        builder: (context) { //<-- this context, children of/inherit from StreamProvider
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(widget.title),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'You have pushed the button this many times:',
+                        ),
+                        Text(
+                          '$_counter',
+                          style: Theme.of(context).textTheme.headline4,
+                        )
+                      ],
                     ),
                   ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    color: Colors.lightBlueAccent,
-//STREAMPROVIDER WATCH HERE
-                    child: ListView.builder(
-                      itemCount: context.watch<List<DBRow>>().length,
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      color: Colors.lightBlueAccent,
+
+/// CONSUMER / CONTEXT.WATCH of STREAM*PROVIDER* HERE
+                      child: ListView.builder(
+                        itemCount: context.watch<List<RowItem>>().length,
                         itemBuilder: (context, index) {
-                        List<DBRow> _holders = context.watch<List<DBRow>>();
+                          List<RowItem> _row = context.watch<List<RowItem>>();
                           return ListTile(
-                            title: Text('[${_holders[index].num}]'),
+                            title: Text(
+                                '[${_row[index].num} | ${_row[index].name}]'),
                           );
                         },
+                      ),
                     ),
                   ),
-                )
-              ],
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      alignment: Alignment.center,
+                      color: Colors.lightGreenAccent,
+
+/// STREAM_BUILDER_ for contrast HERE
+                      child: StreamBuilder(
+                        initialData: row,
+                        stream: streamController.stream,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            List<RowItem> _row = snapshot.data;
+                            return ListView.builder(
+                              itemCount: _row.length,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  title: Text(
+                                      '[${_row[index].num} | ${_row[index].name}]'),
+                                );
+                              },
+                            );
+                          }
+                          return Text('Waiting on data...');
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: _incrementCounter,
-            tooltip: 'Increment',
-            child: Icon(Icons.add),
-          ), // This trailing comma makes auto-formatting nicer for build methods.
-        ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: _incrementCounter,
+              tooltip: 'Increment',
+              child: Icon(Icons.add),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class DBRow {
+class RowItem {
   int num;
   String name;
 
-  DBRow(this.num);
+  RowItem(this.num) {
+    name = WordPair.random().asPascalCase;
+  }
 }
